@@ -1,5 +1,12 @@
 <resources>
     <string name="app_name">Sunshine Wear</string>
     <string name="message">Watch face tapped</string>
-    <string name="my_digital_name">My Digital</string>
+    <string name="my_digital_name">Sunshine</string>
+
+    <string name="request_data">request_data</string>
+    <string name="data_changed">data_changed</string>
+
+    <string name="key_high">high</string>
+    <string name="key_low">low</string>
+    <string name="key_image">image</string>
 </resources>

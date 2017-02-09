@@ -1,4 +1,4 @@
-package com.example.android.sunshine.utilities;
+package com.example.android.sunshine.utility;
 
 import android.content.ContentValues;
 import android.content.Context;

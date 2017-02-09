@@ -35,12 +35,13 @@ import android.widget.ProgressBar;
 import com.example.android.sunshine.data.SunshinePreferences;
 import com.example.android.sunshine.data.WeatherContract;
 import com.example.android.sunshine.sync.SunshineSyncUtils;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 public class MainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor>,
         ForecastAdapter.ForecastAdapterOnClickHandler {
 
-    private final String TAG = MainActivity.class.getSimpleName();
+    private final String LOG_TAG = MainActivity.class.getSimpleName();
 
     /*
      * The columns of data that we are interested in displaying within our MainActivity's list of
@@ -78,6 +79,8 @@ public class MainActivity extends AppCompatActivity implements
     private int mPosition = RecyclerView.NO_POSITION;
 
     private ProgressBar mLoadingIndicator;
+
+    GoogleApiClient mGoogleApiClient;
 
 
     @Override
@@ -178,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements
         if (intent.resolveActivity(getPackageManager()) != null) {
             startActivity(intent);
         } else {
-            Log.d(TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed!");
+            Log.d(LOG_TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed!");
         }
     }
 
@@ -234,7 +237,6 @@ public class MainActivity extends AppCompatActivity implements
      */
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-
 
         mForecastAdapter.swapCursor(data);
         if (mPosition == RecyclerView.NO_POSITION) mPosition = 0;

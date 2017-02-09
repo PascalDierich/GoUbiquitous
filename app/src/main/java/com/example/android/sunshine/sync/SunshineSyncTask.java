@@ -18,17 +18,38 @@ package com.example.android.sunshine.sync;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.format.DateUtils;
+import android.util.Log;
 
 import com.example.android.sunshine.data.SunshinePreferences;
 import com.example.android.sunshine.data.WeatherContract;
-import com.example.android.sunshine.utilities.NetworkUtils;
-import com.example.android.sunshine.utilities.NotificationUtils;
-import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
+import com.example.android.sunshine.utility.NetworkUtils;
+import com.example.android.sunshine.utility.NotificationUtils;
+import com.example.android.sunshine.utility.OpenWeatherJsonUtils;
+import com.example.android.sunshine.utility.SunshineWeatherUtils;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URL;
 
-public class SunshineSyncTask {
+public class SunshineSyncTask implements
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
+
 
     /**
      * Performs the network request for updated weather, parses the JSON from that request, and
@@ -38,7 +59,20 @@ public class SunshineSyncTask {
      *
      * @param context Used to access utility methods and the ContentResolver
      */
-    synchronized public static void syncWeather(Context context) {
+
+    static Context mContext;
+    GoogleApiClient mGoogleApiClient;
+
+    synchronized public void syncWeather(final Context context) {
+
+        Log.e("SunshineSyncTask", "Inside syncWeather");
+        mContext = context;
+        mGoogleApiClient = new GoogleApiClient.Builder(mContext)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
+        mGoogleApiClient.connect();
 
         try {
             /*
@@ -76,6 +110,51 @@ public class SunshineSyncTask {
                         WeatherContract.WeatherEntry.CONTENT_URI,
                         weatherValues);
 
+                //Here is all the implementation require for GoUbiguitious Project
+                //Query to get info for watchface
+                Cursor cursor = sunshineContentResolver.query(WeatherContract.WeatherEntry.CONTENT_URI,
+                        null, null, null, null);
+                cursor.moveToFirst();
+                /*Toast.makeText(mContext, cursor.getInt(4) + "\n" + cursor.getInt(3) + "\n" + cursor.getInt(2),
+                        Toast.LENGTH_SHORT).show();*/
+
+                String highTempString = cursor.getInt(4) + "\u00B0";
+                String lowTempString = cursor.getInt(3) + "\u00B0";
+                int weatherId = cursor.getInt(2);
+                int weatherImageId = SunshineWeatherUtils
+                        .getLargeArtResourceIdForWeatherCondition(weatherId);
+
+
+
+                // I am sending low & temp along with the required icon to show in watch face
+
+                Bitmap bitmap = getBitMapFormVectorDrawable(weatherImageId,mContext);
+                final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                bitmap = Bitmap.createScaledBitmap(bitmap, 40, 40, true);
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream);
+                Asset asset = Asset.createFromBytes(byteStream.toByteArray());
+
+                PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/data");
+                putDataMapReq.getDataMap().putString("highTempKey", highTempString);
+                putDataMapReq.getDataMap().putString("lowTempKey", lowTempString);
+                putDataMapReq.getDataMap().putAsset("image", asset);
+                PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
+                Wearable.DataApi.deleteDataItems(mGoogleApiClient, putDataReq.getUri());
+                putDataReq.setUrgent();
+                Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq)
+                        .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                            @Override
+                            public void onResult(DataApi.DataItemResult dataItemResult) {
+                                if (!dataItemResult.getStatus().isSuccess()) {
+                                    Log.e("SunshineSyncTask", "ERROR: failed to putDataItem, status code: "
+                                            + dataItemResult.getStatus().getStatusCode());
+                                } else {
+                                    Log.e("SunshineSyncTask", "Data is send succesfully");
+                                }
+                            }
+                        });
+
+
                 /*
                  * Finally, after we insert data into the ContentProvider, determine whether or not
                  * we should notify the user that the weather has been refreshed.
@@ -105,12 +184,36 @@ public class SunshineSyncTask {
                 }
 
             /* If the code reaches this point, we have successfully performed our sync */
-
             }
 
         } catch (Exception e) {
             /* Server probably invalid */
             e.printStackTrace();
         }
+    }
+
+    static Bitmap getBitMapFormVectorDrawable(int weatherImageId,Context mContext) {
+        Bitmap bitmap;
+        Drawable drawable = mContext.getResources().getDrawable(weatherImageId);
+        bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
     }
 }

@@ -18,7 +18,7 @@ package com.example.android.sunshine.data;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
-import com.example.android.sunshine.utilities.SunshineDateUtils;
+import com.example.android.sunshine.utility.SunshineDateUtils;
 
 /**
  * Defines table and column names for the weather database. This class is not necessary, but keeps

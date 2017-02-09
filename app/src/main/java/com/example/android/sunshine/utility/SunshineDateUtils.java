@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.android.sunshine.utilities;
+package com.example.android.sunshine.utility;
 
 import android.content.Context;
 import android.text.format.DateUtils;

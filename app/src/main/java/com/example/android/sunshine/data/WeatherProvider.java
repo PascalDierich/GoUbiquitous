@@ -24,7 +24,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 
-import com.example.android.sunshine.utilities.SunshineDateUtils;
+import com.example.android.sunshine.utility.SunshineDateUtils;
 
 /**
  * This class serves as the ContentProvider for all of Sunshine's data. This class allows us to
